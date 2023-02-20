@@ -166,6 +166,7 @@ function addRole() {
 
 function addEmployee() {
     let roles = [];
+    let employees = [];
     let first;
     let last;
     db.promise().query('SELECT title FROM employee_role')
@@ -173,6 +174,14 @@ function addEmployee() {
             for(const i in rows) {
                 roles.push(rows[i].title);
             }
+            return;
+        });
+    db.promise().query('SELECT first_name, last_name FROM employee')
+        .then(([rows]) => {
+            for(const i in rows) {
+                employees.push(rows[i].first_name.concat(' ', rows[i].last_name));
+            }
+            employees.push('None');
             return;
         });
     inquirer.prompt([
@@ -198,17 +207,18 @@ function addEmployee() {
                     choices: roles,
                 },
                 {
-                    type: 'input',
+                    type: 'list',
                     name: 'mgr',
-                    message: 'Enter manager ID number, or leave blank:',
+                    message: 'Select manager of new employee:',
+                    choices: employees,
                 }
             ]).then((res) => {
                 if(res.role) {
                     let id;
-                    if(!res.mgr) {
+                    if(res.mgr == 'None') {
                         id = null;
                     } else {
-                        id = res.mgr;
+                        id = employees.indexOf(res.mgr) + 1;
                     };
                     db.promise().query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ("${first}", "${last}", ${roles.indexOf(res.role) + 1}, ${id})`)
                         .then(() => {
@@ -231,14 +241,16 @@ function addEmployee() {
 };
 
 function updateRole() {
-    let employees = [];
+    let stafflist = [];
+    let managerChoices = [];
     let roles = [];
     db.promise().query('SELECT first_name, last_name FROM employee')
         .then(([rows]) => {
             for(const i in rows) {
                 let fullname = rows[i].first_name.concat(' ', rows[i].last_name);
-                employees.push(fullname);
+                stafflist.push(fullname);
             }
+            managerChoices.push(...stafflist, 'None');
             return;
     });
     db.promise().query('SELECT * FROM employee_role')
@@ -254,17 +266,29 @@ function updateRole() {
                 type: 'list',
                 name: 'name',
                 message: 'Select employee to update:',
-                choices: employees,
+                choices: stafflist,
             },
             {
                 type: 'list',
                 name: 'role',
                 message: 'Select new role:',
                 choices: roles,
+            },
+            {
+                type: 'list',
+                name: 'mgr',
+                message: 'Select employee manager:',
+                choices: managerChoices,
             }
         ]).then((res) => {
-            if(res.name && res.role) {
-                db.promise().query(`UPDATE employee SET role_id = ${roles.indexOf(res.role) + 1} WHERE id = ${employees.indexOf(res.name) + 1}`)
+            if(res.name && res.role && res.mgr) {
+                let mgrid;
+                if(res.mgr == 'None') {
+                    mgrid = null;
+                } else {
+                    mgrid = stafflist.indexOf(res.mgr) + 1;
+                }
+                db.promise().query(`UPDATE employee SET role_id = ${roles.indexOf(res.role) + 1}, manager_id = ${mgrid} WHERE id = ${stafflist.indexOf(res.name) + 1}`)
                     .then(() => {
                         console.log('Employee updated.');
                         initMenu();
