@@ -69,7 +69,7 @@ function viewDepartments() {
 };
 
 function viewRoles() {
-    db.promise().query('SELECT employee_role.id, employee_role.title, employee_role.salary, department.name AS dept_name FROM employee_role JOIN department ON employee_role.department_id = department.id ORDER BY employee_role.id')
+    db.promise().query('SELECT r.id, r.title, r.salary, d.name AS dept_name FROM employee_role r INNER JOIN department d ON r.department_id = d.id ORDER BY r.id')
         .then(([rows, fields]) => {
             console.table(rows);
         })
@@ -79,7 +79,7 @@ function viewRoles() {
 };
 
 function viewEmployees() {
-    db.promise().query('SELECT e.id, CONCAT(e.first_name, " ", e.last_name) AS name, employee_role.title, employee_role.salary, CONCAT(m.first_name, " ", m.last_name) AS manager FROM employee e JOIN employee_role ON e.role_id = employee_role.id LEFT OUTER JOIN employee m ON m.id = e.manager_id ORDER BY e.id')
+    db.promise().query('SELECT e.id, CONCAT(e.first_name, " ", e.last_name) AS name, r.title, d.name AS dept, r.salary, CONCAT(m.first_name, " ", m.last_name) AS manager FROM employee_role r INNER JOIN employee e ON e.role_id = r.id INNER JOIN department d ON r.department_id = d.id LEFT JOIN employee m ON m.id = e.manager_id ORDER BY e.id')
         .then(([rows, fields]) => {
             console.table(rows);
         })
